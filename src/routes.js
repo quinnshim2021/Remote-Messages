@@ -1,12 +1,10 @@
 "use strict";
 
-const resetDB = require("../config/scripts/populateDB")
-
-const Anime = require("./schema/Anime");
-
+const axios = require('axios');
 const express = require("express");
 const router = express.Router();
 
+// test ping for client to web server
 router.route("/")
     .get((_req, res) => {
         console.log("GET /");
@@ -15,115 +13,90 @@ router.route("/")
         });
     });
 
-router.route("/anime")
-    .get((req, res) => {
-        console.log("GET /anime");
+// validate request
+// just a dummy method rn
+let validateData = (data) => {
+    let testFailure = false;
 
-        // already implemented:
-        Anime.find({})
-            .then(data => {
-                res.status(200).send(data);
-            })
-            .catch(err => {
-                res.status(500).send(err);
-            });
-    })
-
-/*
-    *genre: list that i need to regex all
-    Status := 'Finished Airing' || 'Currently Airing'
-    Type := 'TV' || 'Movie'
-    StartAiring: idk how to do the dates
-    Rating := regular ones
-    Duration := remove per ep. if in it
-    Score, Favorites := do gte for greater than equal to
-*/
-// only need to check genre because rest will result in bad query if wrong
-const validQuery = (queries) => {
-    if (queries.Genres && ! typeof queries.Genres === Array){
-        return false;
+    if (!testFailure) {
+        return true;
+    } else {
+        throw 'oof error';
     }
+};
 
+// validate ip address
+// just a dummy method rn
+let validateIP = (ip, port) => {
+    // check if undefined
+    // check regex for valid ip
+    // check regex for valid port
     return true;
-}
+    // else throw 'invalid ip';
+};
 
-router.route("/anime/query")
+// test ping from web server to arduino
+router.route("/pingArduino")
     .post((req, res) => {
-        const queries = req.body;
-        
-        // CHECK LEGALITY
-        if (! validQuery(queries)){
-            res.status(501).send("Genres not correct shape.");
-            return;
-        }
-        console.log("HERE", queries)
+        // req: ip address
+        let ipAddr;
+        let port;
+        let status;
+        let data;
 
-        // CONSTRUCT QUERY
-        let props = {};
+        try {
+            // get and validate ip address, port
+            ipAddr, port = req.body.ipAddr, req.body.port;
+            validateIP(ipAddr, port);
 
-        if (queries.Title){
-            // make regex object for regular expression for title, keep all case insensitive with i
-            props.Title = new RegExp(queries.Title, "i")
-        }
-        if (queries.Type){
-            props.Type = queries.Type
-        }
-        if (queries.Status){
-            props.Status = queries.Status
-        }
-        if (queries.Studios){
-            props.Studios = new RegExp(queries.Studios, "i")
-        }
-        if (queries.Genres){
-            let r = "";
-            queries.Genres.forEach((genre) => {
-                r += genre + "|"
-            })
-            r.slice(0, -1);
-
-            props.Genres = new RegExp(r, "i")
-        }
-        if (queries.Rating){
-            props.Rating = queries.Rating
-        }
-        if (queries.Score){
-            props.Score = { $gte: queries.Score }
+            // send ping to arduino
+            axios
+                .post('ip address:port', {
+                    message: 'test'
+                })
+                .then(res => {
+                    let resStatus = res.status;
+                    if (resStatus >= 299){
+                        data = 'okie dokie';
+                    } else { // prob automatically goes to catch
+                        throw '500 from arduino';
+                    }
+                })
+                .catch(error => {
+                    throw error;
+                });
+        } catch (error) {
+            status = 500;
+            data = error;
         }
 
-        Anime.find(props) // take in props here
-            .then(data => {
-                if (!data || data.length === 0){
-                    res.status(404).send("Anime not found");
-                    return;
-                }
-                res.status(200).send(data);
-                return;
-            })
-            .catch(error => {
-                res.status(501).send("Anime not found or there was an error");
-                return;
-            });
-    })
+        // respond to web client
+        res.status(status).send(data);
+    });
 
-router.route("/anime/:id")
-    .get((req, res) => {
-        console.log(`GET /anime/${req.params.id}`);
-        
-        Anime.findById(req.params.id)
-            .then(data => {
-                if (!data){
-                    res.status(404).send("Anime not found");
-                    return;
-                }
-                res.status(200).send(data);
-                return;
-            })
-            .catch(error => {
-                res.status(404).send("Anime not found");
-                return;
-            });
-    })
+router.route("/uploadMap")
+    .post((req, res) => {
+        let status;
+        let data;
 
+        try {
+            data = req.body;
+            validateData(data);
 
+            // validate bitmap exists and is good (i.e. dimensions)
+
+            // validate forwarding ip address is in request payload
+
+            // send bitmap to ip address
+            
+            // at end, include a catch
+            // also send back a 200 for the post
+            status = 200;
+        } catch (error) {
+            status = 500;
+        }
+
+        res.status(status).send();
+    });
 
 module.exports = router;

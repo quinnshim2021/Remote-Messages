@@ -1,10 +1,9 @@
 {
-  "name": "cs396",
+  "name": "Remote Messages",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
   "scripts": {
-    "populate": "cross-env NODE_ENV=development node ./config/scripts/execPopulateDB.js",
     "start": "cross-env NODE_ENV=development nodemon index.js",
     "test": "cross-env NODE_ENV=development mocha --exit"
   },
